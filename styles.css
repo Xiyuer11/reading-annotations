@@ -1,0 +1,243 @@
+.reading-annotations-view {
+  padding: 12px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.reading-annotations-search {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.reading-annotations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reading-annotations-item {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  padding: 14px 14px 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 1fr auto;
+  column-gap: 12px;
+  row-gap: 10px;
+  align-items: start;
+  min-height: 92px;
+  opacity: 0.4;
+  transition: opacity 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.reading-annotations-item-active {
+  opacity: 1;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+}
+
+.reading-annotations-text {
+  grid-column: 1;
+  grid-row: 1;
+  padding-right: 0;
+  min-width: 0;
+}
+
+.reading-annotations-thought {
+  font-weight: 600;
+  font-size: 1.02em;
+  margin-bottom: 6px;
+  line-height: 1.42;
+  letter-spacing: 0.01em;
+}
+
+.reading-annotations-meta,
+.reading-annotations-tags {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+.reading-annotations-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 0;
+  width: 100%;
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+}
+
+.reading-annotations-meta-source {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reading-annotations-meta-time {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: right;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.reading-annotations-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  position: static;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+  align-self: start;
+  padding-top: 1px;
+}
+
+.reading-annotations-actions button {
+  padding: 2px 13px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.65;
+  border-radius: 999px;
+  min-width: 60px;
+  text-align: center;
+  border: 1px solid color-mix(in srgb, var(--background-modifier-border) 78%, transparent);
+  background: color-mix(in srgb, var(--background-secondary) 84%, transparent);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.reading-annotations-actions button:hover {
+  background: color-mix(in srgb, var(--background-modifier-hover) 76%, transparent);
+  color: var(--text-normal);
+}
+
+.reading-annotations-clickable {
+  cursor: pointer;
+}
+
+.reading-annotations-clickable:hover {
+  border-color: var(--interactive-accent);
+}
+
+.reading-annotations-inline-trigger {
+  position: fixed;
+  z-index: 1000;
+  border: 1px solid var(--interactive-accent);
+  background: var(--background-primary);
+  color: var(--interactive-accent);
+  border-radius: 999px;
+  height: 26px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 12px;
+  padding: 0 8px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+.reading-annotations-inline-trigger.is-visible {
+  display: inline-flex;
+}
+
+.reading-annotations-inline-trigger:hover {
+  filter: brightness(1.06);
+}
+
+.cm-content .reading-annotations-inline-mark {
+  background: color-mix(in srgb, var(--interactive-accent) 36%, transparent);
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--interactive-accent) 74%, transparent);
+  padding: 0 1px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.markdown-preview-view span.reading-annotations-inline-mark-preview {
+  background: color-mix(in srgb, var(--interactive-accent) 36%, transparent);
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--interactive-accent) 74%, transparent);
+  padding: 0 1px;
+}
+
+.reading-annotations-jump-highlight {
+  outline: 2px solid color-mix(in srgb, var(--interactive-accent) 62%, transparent);
+  outline-offset: 2px;
+  border-radius: 6px;
+  animation: reading-annotations-flash 1.8s ease-out;
+}
+
+/* Native markdown highlight `==text==` visual tune (source + reading) */
+.cm-s-obsidian span.cm-highlight,
+.cm-editor .cm-highlight,
+.markdown-preview-view mark {
+  background: color-mix(in srgb, var(--interactive-accent) 34%, transparent) !important;
+  color: var(--text-normal) !important;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--interactive-accent) 72%, transparent);
+  padding: 0 1px;
+}
+
+@keyframes reading-annotations-flash {
+  0% {
+    background: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.reading-annotations-modal-shell {
+  position: relative;
+  padding: 2px 2px 0;
+}
+
+.reading-annotations-modal-title {
+  margin: 2px 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+}
+
+.reading-annotations-modal-input-wrap {
+  margin-top: 6px;
+}
+
+.reading-annotations-modal-textarea {
+  width: 100%;
+  min-height: 132px;
+  border-radius: 10px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary-alt);
+  padding: 11px 12px;
+  resize: vertical;
+  font-size: 15px;
+  line-height: 1.52;
+}
+
+.reading-annotations-modal-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.reading-annotations-modal-btn {
+  border-radius: 999px;
+  padding: 5px 13px;
+  min-width: 66px;
+}

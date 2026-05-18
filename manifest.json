@@ -1,0 +1,10 @@
+{
+  "id": "reading-annotations",
+  "name": "Reading Annotations",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Capture sidecar-based reading annotations with source tracking and jump-back anchors.",
+  "author": "xiyuer",
+  "authorUrl": "",
+  "isDesktopOnly": true
+}

@@ -1,0 +1,1085 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reading Annotations Prototype</title>
+    <style>
+      :root {
+        --bg: #f6f2ea;
+        --panel: #fffdf8;
+        --ink: #1f2933;
+        --muted: #6b7280;
+        --accent: #0f766e;
+        --accent-soft: #cce9e6;
+        --line: #d9d2c3;
+        --warn: #b45309;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 12% 8%, #f4d8a8 0%, transparent 26%),
+          radial-gradient(circle at 85% 20%, #b7d8cf 0%, transparent 28%),
+          var(--bg);
+        min-height: 100vh;
+      }
+
+      .app {
+        max-width: 1220px;
+        margin: 32px auto;
+        padding: 0 16px;
+      }
+
+      .title {
+        margin: 0 0 16px;
+        font-size: clamp(22px, 3vw, 32px);
+        letter-spacing: 0.01em;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1.15fr 0.95fr;
+        gap: 16px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+      }
+
+      .card-hd {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .card-bd {
+        padding: 14px;
+      }
+
+      .note-meta {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .storage-mode {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .note-wrap {
+        position: relative;
+      }
+
+      textarea#note {
+        width: 100%;
+        min-height: 440px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 15px;
+        line-height: 1.65;
+        font-family: "Iowan Old Style", "Songti SC", serif;
+        resize: vertical;
+        background: #fff;
+      }
+
+      .inline-comment-trigger {
+        position: absolute;
+        right: 8px;
+        height: 26px;
+        border-radius: 999px;
+        border: 1px solid #b9dcd7;
+        background: #f8fffe;
+        color: #0f766e;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        padding: 0 8px;
+        box-shadow: 0 6px 14px rgba(15, 118, 110, 0.12);
+        z-index: 40;
+        transform: translateY(0);
+        transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      }
+
+      .inline-comment-trigger.visible {
+        display: inline-flex;
+      }
+
+      .inline-comment-trigger:hover {
+        background: #ebfffc;
+        box-shadow: 0 8px 18px rgba(15, 118, 110, 0.18);
+        transform: translateY(-1px);
+      }
+
+      .inline-comment-trigger svg {
+        width: 14px;
+        height: 14px;
+        display: block;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .save-feedback {
+        margin-top: 10px;
+        border: 1px solid var(--accent);
+        background: #eef9f8;
+        color: #0b5f58;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 13px;
+        display: none;
+      }
+
+      .save-feedback.visible {
+        display: block;
+      }
+
+      .latest-preview {
+        margin-top: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 12px;
+        padding: 10px;
+        display: none;
+      }
+
+      .latest-preview.visible {
+        display: block;
+      }
+
+      .latest-preview .pv-title {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .latest-preview .pv-thought {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .latest-preview .pv-meta {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      button {
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 999px;
+        padding: 7px 12px;
+        cursor: pointer;
+      }
+
+      button.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      .list {
+        margin-top: 12px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .item {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+        background: #fff;
+      }
+
+      .item.saved-focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px #d9f1ee;
+      }
+
+      .item-thought {
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .item-meta {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+
+      .item-tags {
+        color: var(--accent);
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+
+      .item-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .item-foot-meta {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .item-foot-meta.time {
+        text-align: right;
+      }
+
+      .item-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 6px;
+      }
+
+      .item-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .item-tools {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .item-tools button {
+        border-radius: 8px;
+        padding: 3px 7px;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .item-main {
+        cursor: pointer;
+      }
+
+      .item-main:hover .item-thought {
+        text-decoration: underline;
+        text-decoration-color: var(--accent);
+      }
+
+      .item-thought.clamped {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 5;
+        overflow: hidden;
+      }
+
+      .thought-toggle {
+        margin-top: 4px;
+        border: none;
+        background: transparent;
+        color: var(--accent);
+        padding: 0;
+        border-radius: 0;
+        font-size: 12px;
+      }
+
+      .unresolved {
+        color: var(--warn);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+
+      .kbd {
+        border: 1px solid var(--line);
+        border-bottom-width: 2px;
+        border-radius: 6px;
+        padding: 1px 6px;
+        font-size: 12px;
+        background: #fff;
+      }
+
+      .context-menu {
+        position: fixed;
+        z-index: 1000;
+        min-width: 160px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 16px 28px rgba(0, 0, 0, 0.14);
+        padding: 4px;
+        display: none;
+      }
+
+      .context-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        padding: 8px 10px;
+        font-size: 14px;
+      }
+
+      .context-item:hover {
+        background: var(--accent-soft);
+      }
+
+      .comment-card {
+        position: absolute;
+        right: 16px;
+        top: 16px;
+        width: min(360px, calc(100% - 32px));
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fffefb;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+        padding: 12px;
+        display: none;
+        z-index: 30;
+      }
+
+      .comment-card.visible {
+        display: block;
+      }
+
+      .comment-card h3 {
+        margin: 0 0 8px;
+        font-size: 16px;
+      }
+
+      .comment-field {
+        margin-bottom: 8px;
+      }
+
+      .comment-field label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      .comment-field input,
+      .comment-field textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 8px;
+        background: #fff;
+      }
+
+      .comment-field textarea {
+        min-height: 84px;
+        resize: vertical;
+      }
+
+      .comment-quote {
+        font-size: 12px;
+        color: var(--muted);
+        background: #f9f6ef;
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 8px;
+      }
+
+      .comment-time {
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .comment-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        textarea#note {
+          min-height: 300px;
+        }
+
+        .comment-card {
+          position: fixed;
+          right: 16px;
+          left: 16px;
+          top: auto;
+          bottom: 16px;
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <h1 class="title">Reading Annotations Prototype</h1>
+      <div class="layout">
+        <section class="card">
+          <div class="card-hd">
+            <strong>笔记内容（模拟原 Markdown）</strong>
+            <span class="note-meta">选中文本后，右侧会浮出评论图标</span>
+          </div>
+          <div class="card-bd">
+            <div class="note-wrap">
+              <textarea id="note"></textarea>
+              <button id="inlineCommentTrigger" class="inline-comment-trigger" type="button" title="添加评论">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M7 9.5h10M7 13h6m5.5 7-3.1-1.8c-.4-.2-.8-.3-1.2-.3H7a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v6a4 4 0 0 1-2.5 3.7Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>评论</span>
+              </button>
+              <aside id="commentCard" class="comment-card">
+                <h3 id="cardTitle">评论标注</h3>
+                <div class="comment-field">
+                  <textarea id="cardThought" placeholder="写下你的标注内容..."></textarea>
+                </div>
+                <div class="comment-actions">
+                  <button id="cardCancel" type="button">关闭</button>
+                  <button id="cardSave" class="primary" type="button">保存</button>
+                </div>
+              </aside>
+            </div>
+            <div class="controls">
+              <button id="btnAdd" class="primary">对选中文本添加标注</button>
+              <button id="btnRebuild">重建索引（模拟）</button>
+              <button id="btnReset">重置示例数据</button>
+            </div>
+            <div id="storageMode" class="storage-mode"></div>
+            <div id="saveFeedback" class="save-feedback"></div>
+            <div id="latestPreview" class="latest-preview"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-hd">
+            <strong>当前笔记标注</strong>
+            <span id="count" class="note-meta">0 条</span>
+          </div>
+          <div class="card-bd">
+            <input id="search" type="text" placeholder="搜索想法/标签/来源（仅当前笔记）" />
+            <div id="list" class="list"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="contextMenu" class="context-menu" role="menu">
+      <button id="menuComment" class="context-item" type="button">评论标注</button>
+    </div>
+
+    <script>
+      const NOTE_PATH = 'notes/demo.md';
+      const STORAGE_KEY = 'ra_demo_annotations_v1';
+      const NOTE_KEY = 'ra_demo_note_content_v1';
+      const FRONTMATTER = { source: '《设计与认知》p.42', url: 'https://example.com/article' };
+      const SOURCE_PRIORITY = ['source', 'url', 'reference'];
+
+      const noteEl = document.getElementById('note');
+      const inlineCommentTriggerEl = document.getElementById('inlineCommentTrigger');
+      const listEl = document.getElementById('list');
+      const searchEl = document.getElementById('search');
+      const countEl = document.getElementById('count');
+      const contextMenuEl = document.getElementById('contextMenu');
+      const menuCommentEl = document.getElementById('menuComment');
+      const storageModeEl = document.getElementById('storageMode');
+      const saveFeedbackEl = document.getElementById('saveFeedback');
+      const latestPreviewEl = document.getElementById('latestPreview');
+
+      const commentCardEl = document.getElementById('commentCard');
+      const cardTitleEl = document.getElementById('cardTitle');
+      const cardThoughtEl = document.getElementById('cardThought');
+      const cardSaveEl = document.getElementById('cardSave');
+      const cardCancelEl = document.getElementById('cardCancel');
+
+      let annotations = loadAnnotations();
+      let unresolved = new Set();
+      let pendingSelection = null;
+      let cardMode = 'create';
+      let cardEditingId = null;
+      let lastSavedId = null;
+      let expandedThoughtIds = new Set();
+      let floatingSelection = null;
+      const memoryStore = {};
+
+      function createStorageApi() {
+        try {
+          const testKey = '__ra_test__';
+          window.localStorage.setItem(testKey, '1');
+          window.localStorage.removeItem(testKey);
+          return {
+            mode: 'localStorage',
+            getItem(key) {
+              return window.localStorage.getItem(key);
+            },
+            setItem(key, value) {
+              window.localStorage.setItem(key, value);
+            },
+            removeItem(key) {
+              window.localStorage.removeItem(key);
+            },
+          };
+        } catch {
+          return {
+            mode: 'memory',
+            getItem(key) {
+              return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : null;
+            },
+            setItem(key, value) {
+              memoryStore[key] = String(value);
+            },
+            removeItem(key) {
+              delete memoryStore[key];
+            },
+          };
+        }
+      }
+
+      const storageApi = createStorageApi();
+
+      function sampleNote() {
+        return `---\ntitle: 阅读样例\nsource: 《设计与认知》p.42\n---\n\n阅读时最重要的不是记住所有细节，而是把“触发你思考的句子”固定下来。\n\n当你在一段内容旁边写下自己的理解时，这条笔记才真正变成你的知识。\n\n几天后回看，最有价值的是：你当时为什么会停下来，以及你当时怎么理解。\n`;
+      }
+
+      function loadNote() {
+        const raw = storageApi.getItem(NOTE_KEY);
+        noteEl.value = raw || sampleNote();
+      }
+
+      function saveNote() {
+        storageApi.setItem(NOTE_KEY, noteEl.value);
+      }
+
+      function loadAnnotations() {
+        try {
+          return JSON.parse(storageApi.getItem(STORAGE_KEY) || '[]');
+        } catch {
+          return [];
+        }
+      }
+
+      function persistAnnotations() {
+        storageApi.setItem(STORAGE_KEY, JSON.stringify(annotations));
+      }
+
+      function clipTextByChars(input, maxChars) {
+        const chars = Array.from(input || '');
+        if (chars.length <= maxChars) return input || '';
+        return `${chars.slice(0, maxChars).join('')}…`;
+      }
+
+      function buildAnchor(note, selectedText, startLine, endLine) {
+        const lines = note.split('\n');
+        const contextBefore = startLine > 0 ? lines[startLine - 1] : '';
+        const contextAfter = endLine + 1 < lines.length ? lines[endLine + 1] : '';
+        return { selectedText, startLine, endLine, contextBefore, contextAfter };
+      }
+
+      function getOffsets(text) {
+        const offsets = [0];
+        for (let i = 0; i < text.length; i++) if (text[i] === '\n') offsets.push(i + 1);
+        return offsets;
+      }
+
+      function offsetToLine(offsets, pos) {
+        let lo = 0;
+        let hi = offsets.length - 1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (offsets[mid] <= pos) lo = mid + 1;
+          else hi = mid - 1;
+        }
+        return Math.max(0, lo - 1);
+      }
+
+      function locate(anchor) {
+        const text = noteEl.value;
+        const lines = text.split('\n');
+
+        if (anchor.startLine >= 0 && anchor.endLine < lines.length) {
+          const chunk = lines.slice(anchor.startLine, anchor.endLine + 1).join('\n');
+          const idx = chunk.indexOf(anchor.selectedText);
+          if (idx >= 0) {
+            const lineText = lines[anchor.startLine] || '';
+            const startCh = Math.max(0, lineText.indexOf(anchor.selectedText));
+            return {
+              startLine: anchor.startLine,
+              endLine: anchor.endLine,
+              startCh,
+              endCh: startCh + anchor.selectedText.length,
+              resolved: true,
+            };
+          }
+        }
+
+        const offsets = getOffsets(text);
+        let idx = text.indexOf(anchor.selectedText);
+        while (idx >= 0) {
+          const startLine = offsetToLine(offsets, idx);
+          const endLine = offsetToLine(offsets, idx + anchor.selectedText.length);
+          const before = startLine > 0 ? lines[startLine - 1] : '';
+          const after = endLine + 1 < lines.length ? lines[endLine + 1] : '';
+          const beforeOk = !anchor.contextBefore || before.includes(anchor.contextBefore);
+          const afterOk = !anchor.contextAfter || after.includes(anchor.contextAfter);
+          if (beforeOk || afterOk) {
+            return {
+              startLine,
+              endLine,
+              startCh: idx - offsets[startLine],
+              endCh: idx - offsets[startLine] + anchor.selectedText.length,
+              resolved: true,
+            };
+          }
+          idx = text.indexOf(anchor.selectedText, idx + Math.max(anchor.selectedText.length, 1));
+        }
+        return null;
+      }
+
+      function escapeHtml(s) {
+        return s
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function parseSelection() {
+        const start = noteEl.selectionStart;
+        const end = noteEl.selectionEnd;
+        const selectedText = noteEl.value.slice(start, end).trim();
+        if (!selectedText) return null;
+
+        const beforeStart = noteEl.value.slice(0, start);
+        const beforeEnd = noteEl.value.slice(0, end);
+        const startLine = beforeStart.split('\n').length - 1;
+        const endLine = beforeEnd.split('\n').length - 1;
+
+        return { selectedText, startLine, endLine };
+      }
+
+      function formatTime(iso) {
+        return new Date(iso).toLocaleString('zh-CN', {
+          hour12: false,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+
+      function shouldCollapseThought(text) {
+        const lines = text.split('\n').length;
+        return lines > 5 || text.length > 90;
+      }
+
+      function hideContextMenu() {
+        contextMenuEl.style.display = 'none';
+      }
+
+      function showContextMenu(x, y) {
+        contextMenuEl.style.display = 'block';
+        contextMenuEl.style.left = `${x}px`;
+        contextMenuEl.style.top = `${y}px`;
+      }
+
+      function closeCard() {
+        commentCardEl.classList.remove('visible');
+        cardMode = 'create';
+        cardEditingId = null;
+      }
+
+      function hideInlineCommentTrigger() {
+        inlineCommentTriggerEl.classList.remove('visible');
+        floatingSelection = null;
+      }
+
+      function positionInlineCommentTrigger(selection) {
+        const style = window.getComputedStyle(noteEl);
+        const paddingTop = Number.parseFloat(style.paddingTop) || 12;
+        const lineHeight = Number.parseFloat(style.lineHeight) || 24;
+        const rawTop = paddingTop + selection.startLine * lineHeight - noteEl.scrollTop;
+        const maxTop = Math.max(8, noteEl.clientHeight - 36);
+        const clampedTop = Math.max(8, Math.min(maxTop, rawTop));
+        inlineCommentTriggerEl.style.top = `${clampedTop}px`;
+        inlineCommentTriggerEl.classList.add('visible');
+      }
+
+      function updateInlineCommentTrigger() {
+        const sel = parseSelection();
+        if (!sel) {
+          hideInlineCommentTrigger();
+          return;
+        }
+        floatingSelection = sel;
+        pendingSelection = sel;
+        positionInlineCommentTrigger(sel);
+      }
+
+      function showSavedState(row, actionText) {
+        if (!row) return;
+        saveFeedbackEl.textContent = `${actionText}：已保存并写入标注列表`;
+        saveFeedbackEl.classList.add('visible');
+
+        latestPreviewEl.innerHTML = `
+          <div class="pv-title">刚保存的标注</div>
+          <div class="pv-thought">${escapeHtml(row.thought)}</div>
+          <div class="pv-meta">来源: ${escapeHtml(clipTextByChars(row.source.display, 10))} ｜ ${formatTime(row.updatedAt)}</div>
+        `;
+        latestPreviewEl.classList.add('visible');
+
+        lastSavedId = row.id;
+        render();
+
+        requestAnimationFrame(() => {
+          const el = listEl.querySelector(`.item[data-id="${row.id}"]`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+
+      function openCardForCreate(selection) {
+        cardMode = 'create';
+        cardEditingId = null;
+        pendingSelection = selection;
+        hideInlineCommentTrigger();
+        hideContextMenu();
+
+        cardTitleEl.textContent = '评论标注';
+        cardThoughtEl.value = '';
+        commentCardEl.classList.add('visible');
+        cardThoughtEl.focus();
+      }
+
+      function openCardForEdit(row) {
+        cardMode = 'edit';
+        cardEditingId = row.id;
+        pendingSelection = null;
+        hideInlineCommentTrigger();
+        hideContextMenu();
+
+        cardTitleEl.textContent = '编辑评论标注';
+        cardThoughtEl.value = row.thought;
+        commentCardEl.classList.add('visible');
+        cardThoughtEl.focus();
+      }
+
+      function saveCard() {
+        cardSaveEl.disabled = true;
+        cardSaveEl.textContent = '保存中...';
+        try {
+          const thought = cardThoughtEl.value.trim();
+          if (!thought) {
+            alert('评注内容不能为空。');
+            return;
+          }
+
+          if (cardMode === 'create') {
+            if (!pendingSelection) {
+              alert('未找到有效锚点：请重新选中文本后再保存。');
+              return;
+            }
+            const selectedSource = pendingSelection.selectedText;
+            const source = {
+              kind: 'manual',
+              value: selectedSource,
+              display: selectedSource,
+            };
+            const now = new Date().toISOString();
+            const record = {
+              id:
+                (window.crypto && typeof window.crypto.randomUUID === 'function'
+                  ? window.crypto.randomUUID()
+                  : `anno_${Date.now()}_${Math.random().toString(16).slice(2)}`),
+              notePath: NOTE_PATH,
+              thought,
+              tags: [],
+              source,
+              createdAt: now,
+              updatedAt: now,
+              anchor: buildAnchor(
+                noteEl.value,
+                pendingSelection.selectedText,
+                pendingSelection.startLine,
+                pendingSelection.endLine,
+              ),
+            };
+            annotations.push(record);
+            persistAnnotations();
+            searchEl.value = '';
+            showSavedState(record, '新标注');
+          } else {
+            const idx = annotations.findIndex((a) => a.id === cardEditingId);
+            if (idx < 0) {
+              alert('未找到这条标注，可能已被删除。');
+              return;
+            }
+            annotations[idx] = {
+              ...annotations[idx],
+              thought,
+              updatedAt: new Date().toISOString(),
+            };
+            unresolved.delete(cardEditingId);
+            persistAnnotations();
+            searchEl.value = '';
+            showSavedState(annotations[idx], '标注更新');
+          }
+          closeCard();
+        } catch (err) {
+          console.error(err);
+          alert(`保存失败：${err && err.message ? err.message : '未知错误'}`);
+        } finally {
+          cardSaveEl.disabled = false;
+          cardSaveEl.textContent = '保存';
+        }
+      }
+
+      function addFromSelection() {
+        const sel = parseSelection();
+        if (!sel) {
+          alert('请先在左侧笔记中选中一段文本。');
+          return;
+        }
+        openCardForCreate(sel);
+      }
+
+      function jumpTo(row) {
+        const resolved = locate(row.anchor);
+        if (!resolved) {
+          unresolved.add(row.id);
+          render();
+          alert('未定位到原文。当前版本请直接删除该条后重新标注。');
+          return;
+        }
+
+        unresolved.delete(row.id);
+        const lines = noteEl.value.split('\n');
+        let pos = 0;
+        for (let i = 0; i < resolved.startLine; i++) pos += lines[i].length + 1;
+        noteEl.focus();
+        noteEl.setSelectionRange(pos + resolved.startCh, pos + resolved.endCh);
+      }
+
+      function render() {
+        const q = searchEl.value.trim().toLowerCase();
+        const rows = annotations
+          .filter((a) => a.notePath === NOTE_PATH)
+          .filter((a) => {
+            if (!q) return true;
+            return [a.thought, a.source.display, a.tags.join(',')]
+              .join(' ')
+              .toLowerCase()
+              .includes(q);
+          })
+          .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+
+        countEl.textContent = `${rows.length} 条`;
+        listEl.innerHTML = rows.length
+          ? rows
+              .map((a) => {
+                const unresolvedMark = unresolved.has(a.id)
+                  ? '<div class="unresolved">未定位：当前版本不提供重定位按钮，请重新创建该标注。</div>'
+                  : '';
+                const focused = a.id === lastSavedId ? 'saved-focus' : '';
+                const collapsible = shouldCollapseThought(a.thought);
+                const expanded = expandedThoughtIds.has(a.id);
+                const thoughtClass = collapsible && !expanded ? 'item-thought clamped' : 'item-thought';
+                const toggleBtn = collapsible
+                  ? `<button class="thought-toggle" data-act="toggle">${expanded ? '收起' : '展开'}</button>`
+                  : '';
+                return `<div class="item ${focused}" data-id="${a.id}">
+                  <div class="item-main" data-act="jump">
+                    <div class="item-head">
+                      <div class="item-content">
+                        <div class="${thoughtClass}">${escapeHtml(a.thought)}</div>
+                        ${toggleBtn}
+                      </div>
+                      <div class="item-tools">
+                        <button data-act="edit"><span>✎</span><span>编辑</span></button>
+                        <button data-act="delete"><span>🗑</span><span>删除</span></button>
+                      </div>
+                    </div>
+                    <div class="item-tags">${a.tags.map((t) => `#${escapeHtml(t)}`).join(' ')}</div>
+                    ${unresolvedMark}
+                    <div class="item-foot">
+                      <div class="item-foot-meta">来源: ${escapeHtml(clipTextByChars(a.source.display, 10))}</div>
+                      <div class="item-foot-meta time">${formatTime(a.updatedAt)}</div>
+                    </div>
+                  </div>
+                </div>`;
+              })
+              .join('')
+          : '<div class="item">当前笔记没有匹配标注。</div>';
+      }
+
+      document.getElementById('btnAdd').addEventListener('click', addFromSelection);
+
+      document.getElementById('btnRebuild').addEventListener('click', () => {
+        annotations = loadAnnotations();
+        unresolved.clear();
+        render();
+        alert('已从 sidecar（本地存储）重建索引（模拟）。');
+      });
+
+      document.getElementById('btnReset').addEventListener('click', () => {
+        if (!confirm('重置会清空标注并恢复示例笔记，继续吗？')) return;
+        storageApi.removeItem(STORAGE_KEY);
+        storageApi.removeItem(NOTE_KEY);
+        annotations = [];
+        unresolved.clear();
+        expandedThoughtIds.clear();
+        lastSavedId = null;
+        saveFeedbackEl.classList.remove('visible');
+        latestPreviewEl.classList.remove('visible');
+        closeCard();
+        loadNote();
+        render();
+      });
+
+      searchEl.addEventListener('input', render);
+      noteEl.addEventListener('input', saveNote);
+      noteEl.addEventListener('select', updateInlineCommentTrigger);
+      noteEl.addEventListener('mouseup', () => {
+        setTimeout(updateInlineCommentTrigger, 0);
+      });
+      noteEl.addEventListener('keyup', updateInlineCommentTrigger);
+      noteEl.addEventListener('scroll', () => {
+        if (floatingSelection) {
+          positionInlineCommentTrigger(floatingSelection);
+        }
+      });
+
+      noteEl.addEventListener('contextmenu', (e) => {
+        const sel = parseSelection();
+        if (!sel) {
+          hideContextMenu();
+          return;
+        }
+        e.preventDefault();
+        pendingSelection = sel;
+        showContextMenu(e.clientX, e.clientY);
+      });
+
+      inlineCommentTriggerEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+      });
+
+      inlineCommentTriggerEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sel = floatingSelection || parseSelection();
+        if (!sel) return;
+        openCardForCreate(sel);
+      });
+
+      menuCommentEl.addEventListener('click', () => {
+        hideContextMenu();
+        if (!pendingSelection) return;
+        openCardForCreate(pendingSelection);
+      });
+
+      window.addEventListener('click', (e) => {
+        if (!inlineCommentTriggerEl.contains(e.target) && e.target !== noteEl) {
+          hideInlineCommentTrigger();
+        }
+        if (!contextMenuEl.contains(e.target)) {
+          hideContextMenu();
+        }
+      });
+
+      window.addEventListener('scroll', hideContextMenu, true);
+      window.addEventListener('resize', () => {
+        hideContextMenu();
+        if (floatingSelection) positionInlineCommentTrigger(floatingSelection);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        const withCmd = e.metaKey || e.ctrlKey;
+        if (withCmd && e.shiftKey && e.key.toLowerCase() === 'a') {
+          e.preventDefault();
+          addFromSelection();
+        }
+
+        if (e.key === 'Escape') {
+          hideContextMenu();
+          hideInlineCommentTrigger();
+          closeCard();
+        }
+      });
+
+      cardSaveEl.addEventListener('click', saveCard);
+      cardCancelEl.addEventListener('click', closeCard);
+
+      listEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        const item = e.target.closest('.item');
+        if (!item) return;
+
+        const row = annotations.find((a) => a.id === item.dataset.id);
+        if (!row) return;
+
+        if (btn) {
+          const act = btn.dataset.act;
+          if (act === 'toggle') {
+            if (expandedThoughtIds.has(row.id)) expandedThoughtIds.delete(row.id);
+            else expandedThoughtIds.add(row.id);
+            render();
+            return;
+          }
+          if (act === 'edit') openCardForEdit(row);
+          if (act === 'delete') {
+            annotations = annotations.filter((a) => a.id !== row.id);
+            unresolved.delete(row.id);
+            expandedThoughtIds.delete(row.id);
+            persistAnnotations();
+            render();
+          }
+          return;
+        }
+
+        const main = e.target.closest('.item-main');
+        if (main) {
+          jumpTo(row);
+        }
+      });
+
+      loadNote();
+      storageModeEl.textContent =
+        storageApi.mode === 'localStorage'
+          ? '存储模式：持久（localStorage）'
+          : '存储模式：临时（当前浏览器禁用了 localStorage，本次会话内可用）';
+      render();
+    </script>
+  </body>
+</html>

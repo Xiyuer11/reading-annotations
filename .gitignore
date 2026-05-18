@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.DS_Store
+.obsidian/
+coverage/
+.vscode/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
