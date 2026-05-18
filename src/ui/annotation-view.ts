@@ -17,6 +17,10 @@ export class AnnotationListView extends ItemView {
   private cardsById = new Map<string, HTMLDivElement>();
   private listEl: HTMLDivElement | null = null;
   private expandedThoughtIds = new Set<string>();
+  private searchRenderTimer: number | null = null;
+  private isComposingSearch = false;
+  private shouldRefocusSearch = false;
+  private searchCursor = 0;
 
   private clipSource(text: string, maxChars = 10): string {
     const chars = Array.from(text ?? '');
@@ -90,6 +94,13 @@ export class AnnotationListView extends ItemView {
     await this.render();
   }
 
+  async onClose(): Promise<void> {
+    if (this.searchRenderTimer != null) {
+      window.clearTimeout(this.searchRenderTimer);
+      this.searchRenderTimer = null;
+    }
+  }
+
   async refresh(): Promise<void> {
     await this.render();
   }
@@ -108,10 +119,31 @@ export class AnnotationListView extends ItemView {
       cls: 'reading-annotations-search',
     });
     input.value = this.query;
-    input.addEventListener('input', async () => {
-      this.query = input.value;
-      await this.render();
+    input.addEventListener('compositionstart', () => {
+      this.isComposingSearch = true;
     });
+    input.addEventListener('compositionend', () => {
+      this.isComposingSearch = false;
+      this.query = input.value;
+      this.searchCursor = input.selectionStart ?? this.query.length;
+      this.shouldRefocusSearch = true;
+      this.scheduleSearchRender(0);
+    });
+    input.addEventListener('input', () => {
+      this.query = input.value;
+      this.searchCursor = input.selectionStart ?? this.query.length;
+      this.shouldRefocusSearch = true;
+      if (this.isComposingSearch) {
+        return;
+      }
+      this.scheduleSearchRender(120);
+    });
+    if (this.shouldRefocusSearch) {
+      input.focus();
+      const pos = Math.max(0, Math.min(this.searchCursor, input.value.length));
+      input.setSelectionRange(pos, pos);
+      this.shouldRefocusSearch = false;
+    }
 
     this.rows = await this.host.queryCurrentNote(this.query);
     this.cardsById.clear();
@@ -227,6 +259,16 @@ export class AnnotationListView extends ItemView {
     }
 
     await this.updateActiveCards();
+  }
+
+  private scheduleSearchRender(delayMs: number): void {
+    if (this.searchRenderTimer != null) {
+      window.clearTimeout(this.searchRenderTimer);
+    }
+    this.searchRenderTimer = window.setTimeout(() => {
+      this.searchRenderTimer = null;
+      void this.render();
+    }, delayMs);
   }
 
   private doesThoughtOverflowWhenClamped(thoughtEl: HTMLElement): boolean {
