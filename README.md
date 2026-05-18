@@ -1,40 +1,77 @@
-# Reading Annotations (Obsidian Plugin)
+# Reading Annotations
 
-一个用于 Obsidian 的阅读标注插件，目标是：
-- 标注过程不污染原文结构
-- 标注可检索、可跳转、可编辑/删除
-- 支持阅读模式与编辑模式一致的核心交互
+> Obsidian 阅读标注插件：**不污染原文、可追溯、可跳转、可检索**。
 
-## 主要功能
-- 选中文本后显示浮动 `评论` 按钮
-- 一键打开评论弹窗，记录标注内容
-- 右侧「当前笔记标注」列表管理（编辑、删除、跳转）
-- 标注高亮支持 `Markdown ==高亮==` 写回模式
-- 删除标注时可同步取消对应高亮（在无复用时）
+## Why
+这个插件面向「高信噪比」知识库场景：
+- 阅读时快速记录想法，不打断流程
+- 标注和来源有清晰关联，后续可查
+- 尽量不把临时想法直接混进正文结构
+- 编辑模式和阅读模式保持一致体验
 
-## 技术实现
-- TypeScript + Obsidian API
-- Sidecar 作为事实源
-- SQLite 作为索引层
+## Features
+- 选中文本后显示浮动 `评论` 按钮（支持多行选中居中定位）
+- 点击按钮弹出评论卡片，记录标注内容
+- 右侧「当前笔记标注」列表：
+- 点击卡片跳回原文锚点
+- 编辑标注、删除标注（删除含二次确认）
+- 高亮支持 `Markdown ==高亮==` 写回模式
+- 删除标注时可同步移除对应高亮（无其他标注复用时）
+- 阅读模式与编辑模式都可完成标注和跳转
 
-## 开发
+## Interaction Flow
+1. 在正文中选中一段文本
+2. 点击右侧浮动 `评论`
+3. 输入想法并保存
+4. 在右侧标注列表管理与回跳
+
+## Architecture
+- `Sidecar`：标注事实源，不依赖把标注数据写进 Markdown 元数据
+- `SQLite`：索引与检索加速层
+- `Hybrid Anchor`：行号 + 文本 + 上下文混合定位，提升回跳鲁棒性
+- `Theme-aware UI`：高亮与主题色联动
+
+## Project Structure
+```text
+src/
+  core/        # anchor / sidecar / sqlite / service
+  ui/          # modal / annotation list view
+  main.ts      # plugin entry
+tests/         # vitest tests
+```
+
+## Development
 ```bash
 npm install
 npm run build
 npm run dev
 ```
 
-## 测试
+## Test
 ```bash
 npm test
 npx tsc --noEmit
 ```
 
-## 安装（开发模式）
-1. 构建产物：`main.js`、`manifest.json`、`styles.css`
-2. 拷贝到 Vault 插件目录：
+## Install (Manual / Dev)
+1. 构建得到 `main.js`、`manifest.json`、`styles.css`
+2. 拷贝到你的 Vault 插件目录：
    `.obsidian/plugins/reading-annotations/`
-3. 在 Obsidian 中启用插件
+3. 在 Obsidian 的社区插件页面启用该插件
+
+## Roadmap
+- [ ] 更细粒度的高亮策略（按段、按标签）
+- [ ] 可配置的标注列表排序/筛选
+- [ ] 可选跨笔记检索视图
+- [ ] 更完整的设置面板（样式、快捷键、写回策略）
+
+## Contributing
+欢迎 Issue / PR。
+
+建议流程：
+1. Fork 并新建分支
+2. 提交改动并附测试说明
+3. 发起 PR，描述背景、方案和影响范围
 
 ## License
 MIT
