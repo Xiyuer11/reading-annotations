@@ -16,6 +16,7 @@ export class AnnotationListView extends ItemView {
   private rows: AnnotationRecord[] = [];
   private cardsById = new Map<string, HTMLDivElement>();
   private listEl: HTMLDivElement | null = null;
+  private expandedThoughtIds = new Set<string>();
 
   private clipSource(text: string, maxChars = 10): string {
     const chars = Array.from(text ?? '');
@@ -129,7 +130,45 @@ export class AnnotationListView extends ItemView {
       item.dataset.id = record.id;
 
       const textRow = item.createDiv({ cls: 'reading-annotations-text' });
-      textRow.createEl('div', { text: record.thought, cls: 'reading-annotations-thought' });
+      const thoughtWrap = textRow.createDiv({ cls: 'reading-annotations-thought-wrap' });
+      const thoughtEl = thoughtWrap.createEl('div', { text: record.thought, cls: 'reading-annotations-thought' });
+      const isExpanded = this.expandedThoughtIds.has(record.id);
+      if (!isExpanded) {
+        thoughtEl.classList.add('reading-annotations-thought-clamped');
+        thoughtWrap.classList.add('is-collapsed');
+      }
+
+      const needsToggle = this.doesThoughtOverflowWhenClamped(thoughtEl);
+      if (needsToggle) {
+        thoughtWrap.classList.add('has-toggle');
+        if (!isExpanded) {
+          thoughtEl.classList.add('reading-annotations-thought-tail-host');
+        }
+        const toggleBtn = thoughtWrap.createEl('button', {
+          text: isExpanded ? '收起' : '展开',
+          cls: 'reading-annotations-thought-toggle',
+        });
+        if (!isExpanded) {
+          toggleBtn.classList.add('is-tail-overlay');
+        }
+        toggleBtn.type = 'button';
+        const stopToggleEvent = (evt: MouseEvent): void => {
+          evt.preventDefault();
+          evt.stopPropagation();
+        };
+        toggleBtn.addEventListener('mousedown', stopToggleEvent);
+        toggleBtn.addEventListener('click', async (evt) => {
+          stopToggleEvent(evt);
+          if (this.expandedThoughtIds.has(record.id)) {
+            this.expandedThoughtIds.delete(record.id);
+          } else {
+            this.expandedThoughtIds.add(record.id);
+          }
+          await this.render();
+        });
+      } else {
+        this.expandedThoughtIds.delete(record.id);
+      }
 
       if (record.tags.length > 0) {
         textRow.createEl('div', {
@@ -188,6 +227,19 @@ export class AnnotationListView extends ItemView {
     }
 
     await this.updateActiveCards();
+  }
+
+  private doesThoughtOverflowWhenClamped(thoughtEl: HTMLElement): boolean {
+    const clampClass = 'reading-annotations-thought-clamped';
+    const wasClamped = thoughtEl.classList.contains(clampClass);
+    if (!wasClamped) {
+      thoughtEl.classList.add(clampClass);
+    }
+    const overflow = thoughtEl.scrollHeight > thoughtEl.clientHeight + 1;
+    if (!wasClamped) {
+      thoughtEl.classList.remove(clampClass);
+    }
+    return overflow;
   }
 
   private async updateActiveCards(): Promise<void> {
